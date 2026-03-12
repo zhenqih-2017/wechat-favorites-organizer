@@ -8,9 +8,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 静态文件服务
-app.use(express.static(path.join(__dirname)));
-
 // 抓取微信文章元数据
 async function fetchWechatMeta(url) {
   try {
@@ -70,7 +67,7 @@ app.get('/api/fetch', async (req, res) => {
   res.json({ url, ...meta });
 });
 
-// 代理跳转 - 解决微信URL参数问题
+// 代理跳转 - 解决微信URL参数问题（必须在静态文件和通配符之前）
 app.get('/go', (req, res) => {
   const targetUrl = req.query.url;
   if (!targetUrl) {
@@ -92,6 +89,9 @@ app.get('/go', (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
+
+// 静态文件服务
+app.use(express.static(path.join(__dirname)));
 
 // 所有其他请求返回index.html（SPA支持）
 app.get('*', (req, res) => {
