@@ -1,0 +1,14 @@
+{
+  "name": "wechat-favorites-organizer",
+  "version": "1.0.0",
+  "description": "微信收藏整理助手 - 自动分类、打标签、生成可视化网页",
+  "type": "skill",
+  "entry": "index.js",
+  "parameters": {
+    "content": {
+      "type": "string",
+      "required": true,
+      "description": "从邮件复制的微信收藏内容"
+    }
+  }
+}

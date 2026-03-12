@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>微信收藏整理</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .card-hover { transition: all 0.2s; }
+    .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div class="max-w-6xl mx-auto p-4 md:p-6">
+    <!-- Header -->
+    <div class="mb-6">
+      <h1 class="text-2xl font-bold text-gray-800 mb-2">微信收藏整理</h1>
+      <p class="text-gray-500 text-sm">共 <span id="total-count">0</span> 条 · <span id="unread-count">0</span> 未读</p>
+    </div>
+
+    <!-- Search -->
+    <div class="relative mb-4">
+      <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+      <input type="text" id="search-input" placeholder="搜索标题、标签..." 
+        class="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+    </div>
+
+    <!-- Category Filter with Tag Toggle -->
+    <div class="mb-2 flex items-center justify-between">
+      <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">分类</span>
+      <button id="tag-toggle" class="text-xs text-gray-500 hover:text-blue-600 transition flex items-center gap-1">
+        <i class="fas fa-filter"></i>标签筛选
+      </button>
+    </div>
+    <div class="flex flex-wrap gap-2 mb-4" id="category-filters"></div>
+
+    <!-- Tag Cloud (Collapsible) -->
+    <div id="tag-cloud-container" class="hidden mb-6">
+      <div class="flex flex-wrap gap-2" id="tag-cloud"></div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="flex items-center justify-between mb-4 text-sm">
+      <div class="flex gap-4">
+        <button id="filter-unread" class="text-gray-500 hover:text-blue-600 transition">
+          <i class="far fa-circle mr-1"></i>仅看未读
+        </button>
+        <button id="filter-starred" class="text-gray-500 hover:text-yellow-600 transition">
+          <i class="fas fa-star mr-1"></i>仅看收藏
+        </button>
+      </div>
+      <button id="clear-filters" class="text-gray-400 hover:text-gray-600 hidden">
+        <i class="fas fa-times mr-1"></i>清除筛选
+      </button>
+    </div>
+
+    <!-- Cards Grid -->
+    <div id="cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="hidden text-center py-16">
+      <i class="fas fa-inbox text-4xl text-gray-300 mb-4"></i>
+      <p class="text-gray-500">没有找到匹配的内容</p>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '';
+    
+    const favoritesData = [
+      { title: "玩OpenClaw真能赚到钱？赛博24小时打工养活你！", url: "https://mp.weixin.qq.com/s?__biz=MzkzOTUwNzM0Mw==&mid=2247484562", category: "OpenClaw", tags: ["变现", "案例"], date: "2026-03-11" },
+      { title: "用了两周OpenClaw后，决定今年不招人类员工了", url: "https://mp.weixin.qq.com/s?__biz=MzI1MTUxNzgxMA==&mid=2247501061", category: "OpenClaw", tags: ["案例", "团队"], date: "2026-03-10" },
+      { title: "为什么很多人的 OpenClaw 都用错了？", url: "https://mp.weixin.qq.com/s?__biz=MjM5NTIzMTY2MQ==&mid=2650441771", category: "OpenClaw", tags: ["认知", "方法论"], date: "2026-03-09" },
+      { title: "我用 OpenClaw 搞了家16人的公司：全员AI，24小时无休！", url: "https://mp.weixin.qq.com/s?__biz=MzA5MTcxMjUzMw==&mid=2658720317", category: "OpenClaw", tags: ["案例", "团队"], date: "2026-03-08" },
+      { title: "我花499找人上门安装OpenClaw，看到了AI时代最魔幻的一幕", url: "https://mp.weixin.qq.com/s?__biz=MzIyMzA5NjEyMA==&mid=2647680353", category: "OpenClaw", tags: ["部署", "服务"], date: "2026-03-07" },
+      { title: "如何3分钟部署你自己的openclaw", url: "https://mp.weixin.qq.com/s?__biz=MzA3Mzk4MzgyNw==&mid=2650711645", category: "OpenClaw", tags: ["部署", "教程"], date: "2026-03-06" },
+      { title: "凌晨4点，我对OpenClaw说我去睡了，你继续干，中午醒来我惊呆了", url: "https://mp.weixin.qq.com/s?__biz=MzE5MTA4MDQyMA==&mid=2247484021", category: "OpenClaw", tags: ["案例", "自动化"], date: "2026-03-05" },
+      { title: "把 OpenClaw 装在本地电脑 24 小时工作，6000 字零基础上手教程", url: "https://mp.weixin.qq.com/s?__biz=MjM5NTIzMTY2MQ==&mid=2650441906", category: "OpenClaw", tags: ["部署", "教程"], date: "2026-03-04" },
+      { title: "我让OpenClaw帮我运营3个小红书号，它比我自己发的还火", url: "https://mp.weixin.qq.com/s?__biz=MzkzNzc1NDc3Mg==&mid=2247485774", category: "OpenClaw", tags: ["运营", "小红书"], date: "2026-03-03" },
+      { title: "卸载 OpenClaw！拥抱NanoClaw", url: "https://mp.weixin.qq.com/s?__biz=MzIzMzQyMzUzNw==&mid=2247513818", category: "OpenClaw", tags: ["工具对比", "NanoClaw"], date: "2026-03-02" },
+      { title: "第一个能在手机上跑的小龙虾来了，它的名字，叫miclaw", url: "https://mp.weixin.qq.com/s?__biz=MzIyMzA5NjEyMA==&mid=2647680504", category: "OpenClaw", tags: ["移动端", "miclaw"], date: "2026-03-01" },
+      { title: "小白养虾指南：火山的ArkClaw把养虾的门槛打到地板了", url: "https://mp.weixin.qq.com/s?__biz=MzI1MTUxNzgxMA==&mid=2247501535", category: "OpenClaw", tags: ["教程", "ArkClaw"], date: "2026-02-28" },
+      { title: "18岁印度少年周末搞了个网站，3天收入破5万——SimpleClaw", url: "https://mp.weixin.qq.com/s?__biz=MzAxMzg0MzMxNg==&mid=2650966400", category: "OpenClaw", tags: ["案例", "变现"], date: "2026-02-27" },
+      { title: "终于，我把 Openclaw 加 Seed2.0 Skills 做 AI 漫剧搞定了", url: "https://mp.weixin.qq.com/s?__biz=MzU4NTE1Mjg4MA==&mid=2247497872", category: "OpenClaw", tags: ["AI漫剧", "Seedance"], date: "2026-02-26" },
+      { title: "我的AI龙虾养成日记", url: "https://mp.weixin.qq.com/s?__biz=MjM5NjgzMzkwMQ==&mid=2653649123", category: "OpenClaw", tags: ["日记", "记录"], date: "2026-02-25" },
+      { title: "8点1氪：宁德时代日赚近2亿；二手平台出现OpenClaw上门卸载服务", url: "https://mp.weixin.qq.com/s?__biz=MzI2NDk5NzA0Mw==&mid=2248880944", category: "OpenClaw", tags: ["资讯", "服务"], date: "2026-02-24" },
+      { title: "3D领域的NanoBanana也来了，万物皆可用嘴操控", url: "https://mp.weixin.qq.com/s?__biz=MzIyMzA5NjEyMA==&mid=2647679204", category: "AI工具", tags: ["NanoBanana", "3D"], date: "2026-03-11" },
+      { title: "重磅更新！Nano Banana 2 来了", url: "https://mp.weixin.qq.com/s?__biz=MjM5NTIzMTY2MQ==&mid=2650441697", category: "AI工具", tags: ["NanoBanana", "更新"], date: "2026-03-10" },
+      { title: "阿里掀桌子了！实测效果媲美 NanoBanana Pro", url: "https://mp.weixin.qq.com/s?__biz=MzI4MjUyNTg1OQ==&mid=2247566095", category: "AI工具", tags: ["阿里", "生图"], date: "2026-03-09" },
+      { title: "实测即梦Seedance2.0：一条近亿播放的YouTube真人视频，我用10块钱成本复刻了", url: "https://mp.weixin.qq.com/s?__biz=MzE5MTA4MDQyMA==&mid=2247483903", category: "AI工具", tags: ["Seedance", "视频"], date: "2026-03-08" },
+      { title: "7天精通 Seedance 2.0实操手册", url: "https://mp.weixin.qq.com/s?__biz=MjM5NjE3NjYzMw==&mid=2247495754", category: "AI工具", tags: ["Seedance", "教程"], date: "2026-03-07" },
+      { title: "Seedance 2.0保姆级教程，直接进来抄作业", url: "https://mp.weixin.qq.com/s?__biz=MzYzNTI4NjUwOA==&mid=2247504922", category: "AI工具", tags: ["Seedance", "教程"], date: "2026-03-06" },
+      { title: "我用Seedance 2.0 10元复刻亿播视频，两天做到百万播放", url: "https://mp.weixin.qq.com/s?__biz=Mzg5MTkwNjUxNQ==&mid=2247648072", category: "AI工具", tags: ["Seedance", "案例"], date: "2026-03-05" },
+      { title: "打不过Seedance 2.0就加入，聊聊贾樟柯新AI广告", url: "https://mp.weixin.qq.com/s?__biz=MzA4NTQzNTMwOA==&mid=2651622436", category: "AI工具", tags: ["Seedance", "广告"], date: "2026-03-04" },
+      { title: "字节杀疯了！豆包 Seed 2.0 专家模式已上线", url: "https://mp.weixin.qq.com/s?__biz=MzI4MjUyNTg1OQ==&mid=2247566719", category: "AI工具", tags: ["豆包", "Seed"], date: "2026-03-03" },
+      { title: "一套指令，消除Banana模糊感，建议收藏！", url: "https://mp.weixin.qq.com/s?__biz=MzYzODI2NDU3NQ==&mid=2247483812", category: "AI工具", tags: ["NanoBanana", "提示词"], date: "2026-03-02" },
+      { title: "笑死？PUA Skills，让Agent极致工作，Github已2.3k star", url: "https://mp.weixin.qq.com/s?__biz=Mzg5MTU1NTE1OQ==&mid=2247498663", category: "AI工具", tags: ["Skills", "GitHub"], date: "2026-03-01" },
+      { title: "一人公司，何以成为可能？", url: "https://mp.weixin.qq.com/s?__biz=MTI0MDU3NDYwMQ==&mid=2657890726", category: "AI创业", tags: ["一人公司", "方法论"], date: "2026-03-11" },
+      { title: "三个月一人公司月入近2万：方法蠢到我不好意思说", url: "https://mp.weixin.qq.com/s?__biz=MzkzNzg4MDA1MA==&mid=2247484001", category: "AI创业", tags: ["变现", "案例"], date: "2026-03-10" },
+      { title: "别再只会用 AI 写文案了！刘小排年入千万的单人 AI 创业", url: "https://mp.weixin.qq.com/s?__biz=Mzg5NzEyMzE3Mg==&mid=2247484251", category: "AI创业", tags: ["刘小排", "营销"], date: "2026-03-09" },
+      { title: "过来人给准独立开发者的建议（2）", url: "https://mp.weixin.qq.com/s?__biz=MzE5OTM1MjM3OA==&mid=2247483686", category: "AI创业", tags: ["独立开发", "建议"], date: "2026-03-08" },
+      { title: "我的00后员工卖空气，赚了2000万", url: "https://mp.weixin.qq.com/s?__biz=MzkwOTM5NzQ4OQ==&mid=2247519350", category: "AI创业", tags: ["案例", "00后"], date: "2026-03-07" },
+      { title: "200万赞涨粉15万！AI超现实风景千万爆款玩法", url: "https://mp.weixin.qq.com/s?__biz=Mzk1NzQ3NTkwMg==&mid=2247496740", category: "内容创作", tags: ["小红书", "爆款"], date: "2026-03-11" },
+      { title: "3人、5天、2亿播放--AI漫剧的爆款公式变了", url: "https://mp.weixin.qq.com/s?__biz=Mzg5ODYyMjI1NA==&mid=2247489391", category: "内容创作", tags: ["AI漫剧", "爆款"], date: "2026-03-10" },
+      { title: "用AI赋能做小红书电商，4个月实现40倍增长的项目复盘", url: "https://mp.weixin.qq.com/s?__biz=Mzg5MTkwNjUxNQ==&mid=2247646646", category: "内容创作", tags: ["小红书", "电商"], date: "2026-03-09" },
+      { title: "没钱请模特？人家都这样干了！", url: "https://mp.weixin.qq.com/s?__biz=MzA5NjIzNjgxNw==&mid=2653315178", category: "内容创作", tags: ["AI模特", "电商"], date: "2026-03-08" },
+      { title: "达沃斯现场｜吴恩达：门槛没了，AI 创业只剩 3 种能力", url: "https://mp.weixin.qq.com/s?__biz=MzYyNTQwNzIwNA==&mid=2247496978", category: "AI资讯", tags: ["吴恩达", "创业"], date: "2026-03-11" },
+      { title: "杀疯了：10天，Claude血洗华尔街始末", url: "https://mp.weixin.qq.com/s?__biz=MjM5NjAxOTU4MA==&mid=3009366228", category: "AI资讯", tags: ["Claude", "华尔街"], date: "2026-03-10" },
+      { title: "大逆转，美国要市场换技术了！", url: "https://mp.weixin.qq.com/s?__biz=MzU5OTU2NDk5NA==&mid=2247497188", category: "AI资讯", tags: ["政策", "国际"], date: "2026-03-09" },
+      { title: "这10条关于AI的认知，是我拿一整年的Token烧出来的", url: "https://mp.weixin.qq.com/s?__biz=MzYzNTI4NjUwOA==&mid=2247504849", category: "职场/成长", tags: ["认知", "经验"], date: "2026-03-11" },
+      { title: "AI时代，为什么我极力推荐你开始写日记？", url: "https://mp.weixin.qq.com/s?__biz=MzIyMzA5NjEyMA==&mid=2647680238", category: "职场/成长", tags: ["日记", "习惯"], date: "2026-03-10" },
+      { title: "刘小排终于发布AI编程课了", url: "https://mp.weixin.qq.com/s?__biz=MzI1MTUxNzgxMA==&mid=2247501473", category: "职场/成长", tags: ["刘小排", "编程"], date: "2026-03-09" },
+      { title: "最近，产品的招聘市场已经卷疯了", url: "https://mp.weixin.qq.com/s?__biz=MjM5NTIzMTY2MQ==&mid=2650441853", category: "职场/成长", tags: ["招聘", "职场"], date: "2026-03-08" },
+      { title: "2026视传人转型，看这两个高薪方向就够了", url: "https://mp.weixin.qq.com/s?__biz=Mzk2ODAyODA3MQ==&mid=2247710968", category: "职场/成长", tags: ["转型", "设计"], date: "2026-03-07" },
+      { title: "不卷绩点和保研，00后小镇青年靠兴趣逆袭做出百万事业？", url: "https://mp.weixin.qq.com/s?__biz=MTc5MTU3NTYyMQ==&mid=2651566956", category: "职场/成长", tags: ["00后", "逆袭"], date: "2026-03-06" },
+      { title: "开源模型质变：Claude Code 超级小白入门指南", url: "https://mp.weixin.qq.com/s?__biz=MzkwMzY5NzU2Nw==&mid=2247488619", category: "技术/开发", tags: ["Claude", "编程"], date: "2026-03-11" },
+      { title: "年轻人迷上怪味，有商家年赚12亿，捧红一个千亿赛道", url: "https://view.inews.qq.com/w/20260210A02L0Y00", category: "商业洞察", tags: ["消费", "趋势"], date: "2026-03-11" },
+      { title: "全国第一个房价大涨的城市，出现了", url: "https://mp.weixin.qq.com/s?__biz=MzI2NDk5NzA0Mw==&mid=2248879231", category: "商业洞察", tags: ["房价", "房产"], date: "2026-03-10" },
+      { title: "不交房租、客源巨大：05后搞出中国最牛小店", url: "https://mp.weixin.qq.com/s?__biz=MjM5MDI5OTkyOA==&mid=2665906668", category: "商业洞察", tags: ["小店", "00后"], date: "2026-03-09" },
+      { title: "不体面但舒服的工作一个月79000", url: "https://mbd.baidu.com/newspage/data/videoshare?nid=sv_4723527543186207885", category: "商业洞察", tags: ["职业", "收入"], date: "2026-03-08" },
+      { title: "越来越兴奋了，终于看到未来AI创作方向了", url: "https://mp.weixin.qq.com/s?__biz=MzA3Mzk4MzgyNw==&mid=2650711348", category: "其他", tags: ["趋势", "创作"], date: "2026-03-11" },
+      { title: "文科生 72 小时杀入 GitHub 全球榜：我没写一行代码，但指挥了一支 AI 军队", url: "https://mp.weixin.qq.com/s?__biz=MTMwNDMwODQ0MQ==&mid=2653099832", category: "其他", tags: ["GitHub", "文科生"], date: "2026-03-10" },
+      { title: "还有必要学习C4D吗？", url: "https://mp.weixin.qq.com/s?__biz=MzA3Mzk4MzgyNw==&mid=2650711892", category: "其他", tags: ["C4D", "设计"], date: "2026-03-09" }
+    ];
+    
+    let currentFilter = { category: 'all', search: '', tag: '', unreadOnly: false, starredOnly: false };
+    let readItems = JSON.parse(localStorage.getItem('readItems') || '[]');
+    let starredItems = JSON.parse(localStorage.getItem('starredItems') || '[]');
+
+    function getCategoryCounts() {
+      const counts = { all: favoritesData.length };
+      favoritesData.forEach(item => { counts[item.category] = (counts[item.category] || 0) + 1; });
+      return counts;
+    }
+
+    function getTagsForCategory(category) {
+      let items = category === 'all' ? favoritesData : favoritesData.filter(item => item.category === category);
+      const tagCounts = {};
+      items.forEach(item => { item.tags.forEach(tag => { tagCounts[tag] = (tagCounts[tag] || 0) + 1; }); });
+      return Object.entries(tagCounts).sort((a, b) => b[1] - a[1]).slice(0, 15).map(([tag]) => tag);
+    }
+
+    function renderCategories() {
+      const counts = getCategoryCounts();
+      const categories = [
+        { key: 'all', label: '全部', icon: '📋' },
+        { key: 'OpenClaw', label: 'OpenClaw', icon: '🦞' },
+        { key: 'AI工具', label: 'AI工具', icon: '🤖' },
+        { key: 'AI创业', label: 'AI创业', icon: '🚀' },
+        { key: '内容创作', label: '内容创作', icon: '🎬' },
+        { key: '职场/成长', label: '职场/成长', icon: '💼' },
+        { key: '商业洞察', label: '商业洞察', icon: '📈' },
+        { key: 'AI资讯', label: 'AI资讯', icon: '📰' },
+        { key: '技术/开发', label: '技术/开发', icon: '💻' },
+        { key: '其他', label: '其他', icon: '📦' }
+      ];
+
+      const container = document.getElementById('category-filters');
+      container.innerHTML = categories.map(cat => {
+        const isActive = currentFilter.category === cat.key;
+        return `<button class="category-btn px-4 py-2 rounded-full text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}" data-category="${cat.key}">${cat.icon} ${cat.label} ${counts[cat.key] || 0}</button>`;
+      }).join('');
+
+      document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentFilter.category = btn.dataset.category;
+          currentFilter.tag = '';
+          renderCategories();
+          renderTagCloud();
+          renderCards();
+        });
+      });
+    }
+
+    function renderTagCloud() {
+      const tags = getTagsForCategory(currentFilter.category);
+      const container = document.getElementById('tag-cloud');
+      container.innerHTML = tags.map(tag => `<button class="tag-btn px-3 py-1 rounded-full text-xs transition ${currentFilter.tag === tag ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600 hover:bg-blue-100 hover:text-blue-600'}" data-tag="${tag}">#${tag}</button>`).join('');
+      
+      document.querySelectorAll('.tag-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentFilter.tag = currentFilter.tag === btn.dataset.tag ? '' : btn.dataset.tag;
+          renderTagCloud();
+          renderCards();
+        });
+      });
+    }
+
+    function renderCards() {
+      let filtered = favoritesData.filter(item => {
+        if (currentFilter.category !== 'all' && item.category !== currentFilter.category) return false;
+        if (currentFilter.search && !item.title.toLowerCase().includes(currentFilter.search.toLowerCase()) && !item.tags.some(t => t.toLowerCase().includes(currentFilter.search.toLowerCase()))) return false;
+        if (currentFilter.tag && !item.tags.includes(currentFilter.tag)) return false;
+        if (currentFilter.unreadOnly && readItems.includes(item.title)) return false;
+        if (currentFilter.starredOnly && !starredItems.includes(item.title)) return false;
+        return true;
+      });
+
+      document.getElementById('total-count').textContent = filtered.length;
+      document.getElementById('unread-count').textContent = favoritesData.filter(item => !readItems.includes(item.title)).length;
+
+      if (filtered.length === 0) {
+        document.getElementById('cards-grid').innerHTML = '';
+        document.getElementById('empty-state').classList.remove('hidden');
+        return;
+      }
+
+      document.getElementById('empty-state').classList.add('hidden');
+
+      const gradients = {
+        'OpenClaw': 'from-orange-400 to-red-500',
+        'AI工具': 'from-blue-400 to-purple-500',
+        'AI创业': 'from-green-400 to-teal-500',
+        '内容创作': 'from-pink-400 to-rose-500',
+        '职场/成长': 'from-yellow-400 to-orange-500',
+        '商业洞察': 'from-indigo-400 to-blue-500',
+        'AI资讯': 'from-cyan-400 to-blue-500',
+        '技术/开发': 'from-gray-400 to-slate-500',
+        '其他': 'from-slate-300 to-gray-400'
+      };
+
+      document.getElementById('cards-grid').innerHTML = filtered.map(item => {
+        const isRead = readItems.includes(item.title);
+        const isStarred = starredItems.includes(item.title);
+        const gradient = gradients[item.category] || 'from-gray-300 to-gray-400';
+        
+        const safeUrl = item.url.replace(/&/g, '&amp;');
+        return `
+          <div class="card-hover bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <a href="${safeUrl}" target="_blank" class="block" onclick="markReadByTitle('${item.title.replace(/'/g, "\\'")}')">
+              <div class="relative h-32 bg-gradient-to-br ${gradient} flex items-center justify-center">
+                <div class="absolute top-2 right-2 flex gap-1">
+                  ${isStarred ? '<span class="text-yellow-400 text-lg">⭐</span>' : ''}
+                  ${!isRead ? '<span class="w-2 h-2 bg-blue-500 rounded-full"></span>' : ''}
+                </div>
+                <div class="absolute bottom-2 left-2">
+                  <span class="px-2 py-1 bg-black/50 text-white text-xs rounded-full">${item.category}</span>
+                </div>
+              </div>
+              <div class="p-4">
+                <h4 class="font-medium text-gray-800 mb-2 line-clamp-2 leading-snug">${item.title}</h4>
+              </div>
+            </a>
+            <div class="px-4 pb-4">
+              <div class="flex items-center justify-between">
+                <div class="flex flex-wrap gap-1">
+                  ${item.tags.slice(0, 2).map(tag => `<span class="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded">#${tag}</span>`).join('')}
+                </div>
+                <div class="flex gap-2">
+                  <button onclick="toggleReadByTitle('${item.title.replace(/'/g, "\\'")}')" class="p-1.5 rounded-lg hover:bg-gray-100 transition">
+                    <i class="${isRead ? 'fas fa-check-circle text-green-500' : 'far fa-circle text-gray-400'} text-sm"></i>
+                  </button>
+                  <button onclick="toggleStarByTitle('${item.title.replace(/'/g, "\\'")}')" class="p-1.5 rounded-lg hover:bg-gray-100 transition">
+                    <i class="${isStarred ? 'fas fa-star text-yellow-400' : 'far fa-star text-gray-400'} text-sm"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const hasFilters = currentFilter.category !== 'all' || currentFilter.search || currentFilter.tag || currentFilter.unreadOnly || currentFilter.starredOnly;
+      document.getElementById('clear-filters').classList.toggle('hidden', !hasFilters);
+    }
+
+    window.markReadByTitle = function(title) {
+      if (!readItems.includes(title)) {
+        readItems.push(title);
+        localStorage.setItem('readItems', JSON.stringify(readItems));
+        renderCards();
+      }
+    };
+
+    window.toggleReadByTitle = function(title) {
+      readItems = readItems.includes(title) ? readItems.filter(t => t !== title) : [...readItems, title];
+      localStorage.setItem('readItems', JSON.stringify(readItems));
+      renderCards();
+    };
+
+    window.toggleStarByTitle = function(title) {
+      starredItems = starredItems.includes(title) ? starredItems.filter(t => t !== title) : [...starredItems, title];
+      localStorage.setItem('starredItems', JSON.stringify(starredItems));
+      renderCards();
+    };
+
+
+
+    document.getElementById('search-input').addEventListener('input', (e) => { currentFilter.search = e.target.value; renderCards(); });
+    document.getElementById('filter-unread').addEventListener('click', () => { currentFilter.unreadOnly = !currentFilter.unreadOnly; document.getElementById('filter-unread').classList.toggle('text-blue-600', currentFilter.unreadOnly); renderCards(); });
+    document.getElementById('filter-starred').addEventListener('click', () => { currentFilter.starredOnly = !currentFilter.starredOnly; document.getElementById('filter-starred').classList.toggle('text-yellow-600', currentFilter.starredOnly); renderCards(); });
+    document.getElementById('clear-filters').addEventListener('click', () => { currentFilter = { category: 'all', search: '', tag: '', unreadOnly: false, starredOnly: false }; document.getElementById('search-input').value = ''; renderCategories(); renderTagCloud(); renderCards(); });
+    
+    // Tag toggle
+    document.getElementById('tag-toggle').addEventListener('click', () => {
+      const container = document.getElementById('tag-cloud-container');
+      container.classList.toggle('hidden');
+      document.getElementById('tag-toggle').classList.toggle('text-blue-600');
+    });
+
+    renderCategories();
+    renderTagCloud();
+    renderCards();
+  </script>
+</body>
+</html>
