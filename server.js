@@ -67,6 +67,26 @@ app.get('/api/fetch', async (req, res) => {
   res.json({ url, ...meta });
 });
 
+// 代理跳转 - 解决微信URL参数问题
+app.get('/go', (req, res) => {
+  const targetUrl = req.query.url;
+  if (!targetUrl) {
+    return res.status(400).send('Missing url parameter');
+  }
+  
+  // 验证URL安全性
+  try {
+    const url = new URL(targetUrl);
+    // 只允许http/https
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return res.status(400).send('Invalid protocol');
+    }
+    res.redirect(targetUrl);
+  } catch (e) {
+    res.status(400).send('Invalid URL');
+  }
+});
+
 // 健康检查
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
