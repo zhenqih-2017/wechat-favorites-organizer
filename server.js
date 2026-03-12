@@ -2,10 +2,14 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const cheerio = require('cheerio');
+const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// 静态文件服务
+app.use(express.static(path.join(__dirname)));
 
 // 抓取微信文章元数据
 async function fetchWechatMeta(url) {
@@ -19,7 +23,6 @@ async function fetchWechatMeta(url) {
     
     const $ = cheerio.load(response.data);
     
-    // 微信文章meta提取
     const title = $('h1.rich_media_title').text().trim() || 
                   $('meta[property="og:title"]').attr('content') || 
                   '无标题';
@@ -74,10 +77,8 @@ app.get('/go', (req, res) => {
     return res.status(400).send('Missing url parameter');
   }
   
-  // 验证URL安全性
   try {
     const url = new URL(targetUrl);
-    // 只允许http/https
     if (url.protocol !== 'http:' && url.protocol !== 'https:') {
       return res.status(400).send('Invalid protocol');
     }
@@ -90,6 +91,11 @@ app.get('/go', (req, res) => {
 // 健康检查
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
+});
+
+// 所有其他请求返回index.html（SPA支持）
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
