@@ -16,7 +16,7 @@
       "dest": "/server.js"
     },
     {
-      "src": "/go",
+      "src": "/go(.*)",
       "dest": "/server.js"
     },
     {
