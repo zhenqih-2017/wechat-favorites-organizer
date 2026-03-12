@@ -16,6 +16,10 @@
       "dest": "/server.js"
     },
     {
+      "src": "/go",
+      "dest": "/server.js"
+    },
+    {
       "src": "/",
       "dest": "/index.html"
     }
