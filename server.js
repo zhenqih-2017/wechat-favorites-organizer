@@ -100,11 +100,15 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
-// 静态文件服务
+// 静态文件服务 - 放在通配符路由之前
 app.use(express.static(path.join(__dirname)));
 
-// 所有其他请求返回index.html（SPA支持）
+// 所有其他请求返回index.html（SPA支持）- 但排除静态文件请求
 app.get('*', (req, res) => {
+  // 如果请求的是静态文件类型，不要返回index.html
+  if (req.path.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
+    return res.status(404).send('Not found');
+  }
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
