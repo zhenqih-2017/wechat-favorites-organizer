@@ -6,6 +6,7 @@
   <title>微信收藏整理</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="./favorites-data.js"></script>
   <style>
     .card-hover { transition: all 0.2s; }
     .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
@@ -69,7 +70,7 @@
   <script>
     const API_BASE = '';
     
-    const favoritesData = [
+    // favoritesData 从 favorites-data.js 加载
       { title: "玩OpenClaw真能赚到钱？赛博24小时打工养活你！", url: "https://mp.weixin.qq.com/s?__biz=MzkzOTUwNzM0Mw==&mid=2247484562", category: "OpenClaw", tags: ["变现", "案例"], date: "2026-03-11" },
       { title: "用了两周OpenClaw后，决定今年不招人类员工了", url: "https://mp.weixin.qq.com/s?__biz=MzI1MTUxNzgxMA==&mid=2247501061", category: "OpenClaw", tags: ["案例", "团队"], date: "2026-03-10" },
       { title: "为什么很多人的 OpenClaw 都用错了？", url: "https://mp.weixin.qq.com/s?__biz=MjM5NTIzMTY2MQ==&mid=2650441771", category: "OpenClaw", tags: ["认知", "方法论"], date: "2026-03-09" },
@@ -121,10 +122,6 @@
       { title: "不交房租、客源巨大：05后搞出中国最牛小店", url: "https://mp.weixin.qq.com/s?__biz=MjM5MDI5OTkyOA==&mid=2665906668", category: "商业洞察", tags: ["小店", "00后"], date: "2026-03-09" },
       { title: "不体面但舒服的工作一个月79000", url: "https://mbd.baidu.com/newspage/data/videoshare?nid=sv_4723527543186207885", category: "商业洞察", tags: ["职业", "收入"], date: "2026-03-08" },
       { title: "越来越兴奋了，终于看到未来AI创作方向了", url: "https://mp.weixin.qq.com/s?__biz=MzA3Mzk4MzgyNw==&mid=2650711348", category: "其他", tags: ["趋势", "创作"], date: "2026-03-11" },
-      { title: "文科生 72 小时杀入 GitHub 全球榜：我没写一行代码，但指挥了一支 AI 军队", url: "https://mp.weixin.qq.com/s?__biz=MTMwNDMwODQ0MQ==&mid=2653099832", category: "其他", tags: ["GitHub", "文科生"], date: "2026-03-10" },
-      { title: "还有必要学习C4D吗？", url: "https://mp.weixin.qq.com/s?__biz=MzA3Mzk4MzgyNw==&mid=2650711892", category: "其他", tags: ["C4D", "设计"], date: "2026-03-09" }
-    ];
-    
     let currentFilter = { category: 'all', search: '', tag: '', unreadOnly: false, starredOnly: false };
     let readItems = JSON.parse(localStorage.getItem('readItems') || '[]');
     let starredItems = JSON.parse(localStorage.getItem('starredItems') || '[]');
