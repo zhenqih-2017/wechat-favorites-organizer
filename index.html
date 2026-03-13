@@ -226,10 +226,10 @@
         const isStarred = starredItems.includes(item.title);
         const gradient = gradients[item.category] || 'from-gray-300 to-gray-400';
         
-        const safeUrl = item.url.replace(/&/g, '&amp;');
+        const proxyUrl = '/go?url=' + encodeURIComponent(item.url);
         return `
           <div class="card-hover bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <a href="${safeUrl}" target="_blank" class="block" onclick="markReadByTitle('${item.title.replace(/'/g, "\\'")}')">
+            <a href="${proxyUrl}" target="_blank" class="block" onclick="markReadByTitle('${item.title.replace(/'/g, "\\'")}')">
               <div class="relative h-32 bg-gradient-to-br ${gradient} flex items-center justify-center">
                 <div class="absolute top-2 right-2 flex gap-1">
                   ${isStarred ? '<span class="text-yellow-400 text-lg">⭐</span>' : ''}
