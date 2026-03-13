@@ -226,7 +226,8 @@
         const isStarred = starredItems.includes(item.title);
         const gradient = gradients[item.category] || 'from-gray-300 to-gray-400';
         
-        const proxyUrl = '/go?url=' + encodeURIComponent(item.url);
+        const encodedUrl = btoa(item.url);
+        const proxyUrl = '/go?b64=' + encodedUrl;
         return `
           <div class="card-hover bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <a href="${proxyUrl}" target="_blank" class="block" onclick="markReadByTitle('${item.title.replace(/'/g, "\\'")}')">

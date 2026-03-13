@@ -69,7 +69,17 @@ app.get('/api/fetch', async (req, res) => {
 
 // 代理跳转 - 解决微信URL参数问题（必须在静态文件和通配符之前）
 app.get('/go', (req, res) => {
-  const targetUrl = req.query.url;
+  let targetUrl = req.query.url;
+  
+  // 支持Base64编码的URL
+  if (req.query.b64) {
+    try {
+      targetUrl = Buffer.from(req.query.b64, 'base64').toString('utf8');
+    } catch (e) {
+      return res.status(400).send('Invalid base64 URL');
+    }
+  }
+  
   if (!targetUrl) {
     return res.status(400).send('Missing url parameter');
   }
