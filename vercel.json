@@ -8,6 +8,18 @@
   ],
   "routes": [
     {
+      "src": "/favorites-data.js",
+      "dest": "/favorites-data.js"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/server.js"
+    },
+    {
+      "src": "/go",
+      "dest": "/server.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "/server.js"
     }
